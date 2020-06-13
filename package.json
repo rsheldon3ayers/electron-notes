@@ -1,0 +1,25 @@
+{
+  "name": "electron-notes",
+  "version": "1.0.0",
+  "description": "A simple notes app",
+  "main": "app/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsheldon3ayers/electron-notes.git"
+  },
+  "keywords": [],
+  "author": "Robert Ayers <rsheldon3ayers@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rsheldon3ayers/electron-notes/issues"
+  },
+  "homepage": "https://github.com/rsheldon3ayers/electron-notes#readme",
+  "dependencies": {
+    "electron": "^9.0.4",
+    "marked": "^1.1.0"
+  }
+}
