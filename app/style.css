@@ -26,13 +26,16 @@ textarea, input, div, button {
     padding: 10px 10px 10px 10px;
 }
 button {
-    font-size: 14px;
-    background-color: rgb(181, 220, 216);
+    font-size: 16px;
+    background-color: #168EEA;
+    color: #f5f5f5;
     border: none;
-    padding: 0.5em 1em;
+    padding: 10px 10px;
+    cursor: pointer;
+    border-radius: 3px;
 }
 button:hover {
-    background-color: rgb(156, 198, 192);
+    background-color: #535F66;
 }
 button:active{
     background-color: rgb(144, 182, 177);
@@ -61,6 +64,6 @@ button:disabled {
 }
 .raw-markdown {
     border: 5px solid rgb(238, 252, 250);
-    background-color: rgb(238, 252, 250);
+    background-color: #f5f5f5;
     font-family: monospace;
 }
