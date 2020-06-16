@@ -124,25 +124,29 @@ const saveMarkdown = exports.saveMarkdown = (targetWindow, file, content) => {
             ],
             properties: ['openFile']
         }).then(result => {
-            if(!file) return;
-        
-        fs.writeFileSync(result.filePath, content);
-        openFile(targetWindow, result.filePath);
+            
+            
+        writeFile(targetWindow, result.filePath, content)
         }).catch(err => {
             console.log(err);
         });
     };   
+    if(!file) return;
+   writeFile(targetWindow, file, content)
 };
-
+const writeFile = (targetWindow, filePath, content) => {
+    console.log(filePath, 'WRITE FILE ===========');
+    fs.writeFileSync(filePath, content);
+        
+        openFile(targetWindow, filePath);
+}
 // Watching Files for changes
 const startWatchingFile = (targetWindow, file) => {
     stopWatchingFile(targetWindow);
     console.log(file)
 
     const watcher = fs.watch(file, (event) => {
-        console.log("HELOO")
         if(event === 'change') {
-            console.log('action')
             const content = fs.readFileSync(file).toString();
             targetWindow.webContents.send('file-changed', file, content);
         }
@@ -152,7 +156,9 @@ const startWatchingFile = (targetWindow, file) => {
 
 const stopWatchingFile = (targetWindow) => {
     if(openFiles.has(targetWindow)) {
-        openFiles.get(targetWindow).stop();
+        let theThing = openFiles.get(targetWindow)
+        console.log(theThing, '-------')
+        openFiles.get(targetWindow).close();
         openFiles.delete(targetWindow);
     }
 }

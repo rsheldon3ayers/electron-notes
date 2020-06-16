@@ -47,6 +47,7 @@ saveHtmlButton.addEventListener('click', () => {
 });
 
 saveMarkdowButton.addEventListener('click', () => {
+    console.log('SAVING');
     mainProcess.saveMarkdown(currentWindow, filePath, markdownView.value);
 });
 
@@ -100,7 +101,7 @@ const renderFile = (file, content) => {
 }
 ipcRenderer.on('file-opened', (event, file, content) => {
     if(currentWindow.isDocumentEdited() && isDifferentContent(content)) {
-        const result = remote.dialog.showMessageBox(currentWindow, {
+        const result = remote.dialog.showMessageBoxSync(currentWindow, {
          type: 'warning',
          title: 'Overwrite Current Unsaved Changes?',
          message: 'Opening a new file in this window will overwrite your saved changes. Open this file anyway?',
@@ -111,14 +112,22 @@ ipcRenderer.on('file-opened', (event, file, content) => {
          defaultId: 0,
          cancelId: 1
         });
-        if(result === 1 ) return; 
-    }
-    renderFile(file, content)
+            if(result === 1 ){
+                event.preventDefault()
+                return;
+            } else {
+                renderFile(file, content)
+            }
+        
+    } 
+   
+        
+    
 });
 
 ipcRenderer.on('file-changed', (event, file, content) => {
     if(!isDifferentContent(content)) return;
-    const result = remote.dialog.showMessageBox(currentWindow, {
+    const result = remote.dialog.showMessageBoxSync(currentWindow, {
         type: 'warning',
         title: 'Overwrite current Unsaved Changes?',
         message: 'Another application has changed this file. Load Changes?',
