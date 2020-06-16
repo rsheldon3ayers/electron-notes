@@ -3,6 +3,7 @@ const fs = require('fs');
 
 
 const windows = new Set();
+const openFiles = new Map();
 
 let mainWindow = null;
 
@@ -50,8 +51,28 @@ const createWindow = exports.createWindow = () => {
         newWindow.show();
     })
 
+    newWindow.on('close', (event) => {
+        if(newWindow.isDocumentEdited()) {
+            event.preventDefault()
+
+            const result = dialog.showMessageBox(newWindow, {
+                type: 'warning',
+                title: "Quit with Unsaved Changes?",
+                buttons: [
+                    'Quit Anyway',
+                    'Cancel'
+                ],
+                defaultId: 0,
+                cancelId: 1
+            });
+            if (result === 0) newWindow.destroy();
+        }
+        
+    })
+
     newWindow.on('closed', () => {
         windows.delete(newWindow);
+        stopWatchingFile(newWindow)
         newWindow = null;
     });
     windows.add(newWindow);
@@ -69,15 +90,16 @@ const getFileFromUser = exports.getFileFromUser = (targetWindow) => {
         if(files) { openFile(targetWindow, result.filePaths[0]) }
     }).catch(err => {
         console.log("ERROR MESSAGE:", err);
-    });
-
-    const openFile = exports.openFile = (targetWindow, file) => {
-        const content = fs.readFileSync(file).toString();
-        app.addRecentDocument(file);
-        targetWindow.setRepresentedFilename(file);
-        targetWindow.webContents.send('file-opened', file, content);
-    }    
+    });   
 }
+const openFile = exports.openFile = (targetWindow, file) => {
+    const content = fs.readFileSync(file).toString();
+    app.addRecentDocument(file);
+    targetWindow.setRepresentedFilename(file);
+    targetWindow.webContents.send('file-opened', file, content);
+    
+    startWatchingFile(targetWindow, file);
+} 
 const saveHtml = exports.saveHtml = (targetWindow, content) => {
     const file = dialog.showSaveDialog(targetWindow, {
         title: 'Save HTML',
@@ -85,12 +107,56 @@ const saveHtml = exports.saveHtml = (targetWindow, content) => {
         filters: [
             { name: 'HTML Files', extensions: [ 'html', 'htm']}
         ]
+    }).then(result => {
+        if(!file) return;
+        fs.writeFileSync(result.filePath, content);
+    }).catch(err => {
+        console.log(err);
     })
-
-    if(!file) return;
-
-    fs.writeFileSync(file, content);
 }
+const saveMarkdown = exports.saveMarkdown = (targetWindow, file, content) => {
+    if (!file) {
+        file = dialog.showSaveDialog(targetWindow, {
+            title: "Save Markdown",
+            defaultPath: app.getPath('documents'),
+            filters: [
+                {name: "Markdonw Files", extensions: ['md', 'markdown']}
+            ],
+            properties: ['openFile']
+        }).then(result => {
+            if(!file) return;
+        
+        fs.writeFileSync(result.filePath, content);
+        openFile(targetWindow, result.filePath);
+        }).catch(err => {
+            console.log(err);
+        });
+    };   
+};
+
+// Watching Files for changes
+const startWatchingFile = (targetWindow, file) => {
+    stopWatchingFile(targetWindow);
+    console.log(file)
+
+    const watcher = fs.watch(file, (event) => {
+        console.log("HELOO")
+        if(event === 'change') {
+            console.log('action')
+            const content = fs.readFileSync(file).toString();
+            targetWindow.webContents.send('file-changed', file, content);
+        }
+    });
+    openFiles.set(targetWindow, watcher);
+};
+
+const stopWatchingFile = (targetWindow) => {
+    if(openFiles.has(targetWindow)) {
+        openFiles.get(targetWindow).stop();
+        openFiles.delete(targetWindow);
+    }
+}
+
 // Closing window kills the app only on non-mac machines
 app.on('window-all-closed', () => {
     if (process.platform === 'darwin') {

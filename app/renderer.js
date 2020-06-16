@@ -8,6 +8,7 @@ const currentWindow = remote.getCurrentWindow();
 let filePath = null;
 let originalContent = '';
 
+const isDifferentContent = (content) => content != markdownView.value;
 const markdownView = document.querySelector('#markdown');
 const htmlView = document.querySelector('#html');
 const newFileButton = document.querySelector('#new-file');
@@ -17,6 +18,13 @@ const revertButton = document.querySelector('#revert');
 const saveHtmlButton = document.querySelector('#save-html');
 const showFileButton = document.querySelector('#show-file');
 const openInDefaultButton = document.querySelector('#open-in-default');
+
+// Drag and Drop Events
+document.addEventListener('dragstart', event => event.preventDefault());
+document.addEventListener('dragover', event => event.preventDefault());
+document.addEventListener('dragleave', event => event.preventDefault());
+document.addEventListener('drop', event => event.preventDefault());
+
 
 const renderMarkdownToHtml = (markdown) => {
     htmlView.innerHTML = marked(sanitizeHtml(markdown));
@@ -37,13 +45,92 @@ newFileButton.addEventListener('click', () => {
 saveHtmlButton.addEventListener('click', () => {
     mainProcess.saveHtml(currentWindow, htmlView.innerHTML);
 });
-ipcRenderer.on('file-opened', (event, file, content) => {
+
+saveMarkdowButton.addEventListener('click', () => {
+    mainProcess.saveMarkdown(currentWindow, filePath, markdownView.value);
+});
+
+revertButton.addEventListener('click', () => {
+    markdownView.value = originalContent;
+    renderMarkdownToHtml(originalContent);
+});
+
+// drag and drop functions
+
+const getDraggedFile = (event) => event.dataTransfer.items[0];
+const getDroppedFile = (event) => event.dataTransfer.files[0];
+
+const fileTypeSupprted = (file) => {
+    return ['txt/plain', 'text/markdown'].includes(file.type);
+};
+
+markdownView.addEventListener('dragover', (event) => {
+    const file = getDraggedFile(event);
+
+    if(fileTypeSupprted(file)) {
+        markdownView.classList.add('drag-over');
+    } else {
+        markdownView.classList.add('drag-error');
+    }
+});
+
+markdownView.addEventListener('dragleave', () => {
+    markdownView.classList.remove('drag-over');
+    markdownView.classList.remove('drag-error');
+});
+markdownView.addEventListener('drop', (event) => {
+    const file = getDroppedFile(event);
+   if(fileTypeSupprted(file)) {
+       mainProcess.openFile(currentWindow, file.path);
+   } else {
+       alert('That file type is not supported');
+   }
+   markdownView.classList.remove('drag-over');
+   markdownView.classList.remove('drag-error');
+});
+
+const renderFile = (file, content) => {
     filePath = file;
     originalContent = content;
 
     markdownView.value = content;
     renderMarkdownToHtml(content);
-    updateUserInterface();
+
+    updateUserInterface(false);
+}
+ipcRenderer.on('file-opened', (event, file, content) => {
+    if(currentWindow.isDocumentEdited() && isDifferentContent(content)) {
+        const result = remote.dialog.showMessageBox(currentWindow, {
+         type: 'warning',
+         title: 'Overwrite Current Unsaved Changes?',
+         message: 'Opening a new file in this window will overwrite your saved changes. Open this file anyway?',
+         buttons: [
+             'Yes',
+             'Cancel'
+         ],
+         defaultId: 0,
+         cancelId: 1
+        });
+        if(result === 1 ) return; 
+    }
+    renderFile(file, content)
+});
+
+ipcRenderer.on('file-changed', (event, file, content) => {
+    if(!isDifferentContent(content)) return;
+    const result = remote.dialog.showMessageBox(currentWindow, {
+        type: 'warning',
+        title: 'Overwrite current Unsaved Changes?',
+        message: 'Another application has changed this file. Load Changes?',
+        button: [
+            'Yes',
+            'Cancel'
+        ],
+        defaultId: 0,
+        cancelId: 1
+    });
+
+    renderFile(file, content);
 });
 
 const updateUserInterface = (isEdited) => {
