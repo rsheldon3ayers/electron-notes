@@ -28,7 +28,7 @@ document.addEventListener('drop', event => event.preventDefault());
 
 const renderMarkdownToHtml = (markdown) => {
     htmlView.innerHTML = marked(sanitizeHtml(markdown));
-}
+};
 markdownView.addEventListener('keyup', (event) => {
     const currentContent = event.target.value;
     renderMarkdownToHtml(currentContent);
@@ -115,14 +115,10 @@ ipcRenderer.on('file-opened', (event, file, content) => {
             if(result === 1 ){
                 event.preventDefault()
                 return;
-            } else {
-                renderFile(file, content)
-            }
+            } 
         
     } 
-   
-        
-    
+    renderFile(file, content)
 });
 
 ipcRenderer.on('file-changed', (event, file, content) => {

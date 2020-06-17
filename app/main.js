@@ -1,4 +1,5 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Menu } = require('electron');
+const applicatioMenu = require('./application-menu');
 const fs = require('fs');
 
 
@@ -8,24 +9,10 @@ const openFiles = new Map();
 let mainWindow = null;
 
 app.on('ready', () => {
-    mainWindow = new BrowserWindow({
-        show: false,
-        webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-        }
-    });
-    mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
-
-    mainWindow.once('ready-to-show', () => {
-        mainWindow.show();
-    });
-
-    mainWindow.on('closed', () => {
-        mainWindow = null;
-    })
+    Menu.setApplicationMenu(applicatioMenu);
+    
     createWindow();
-})
+});
 
 const createWindow = exports.createWindow = () => {
     let x, y;
@@ -183,3 +170,5 @@ app.on('will-finish-launching', () => {
       });
     });
 });
+
+// Menu Functions
